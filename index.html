@@ -667,7 +667,7 @@ make(c,st){
   const box=el('div','sent',x.t.split(' ').map(w=>{const m=w.match(/^(.*?)([.,!?]*)$/);return rdWord(m[1])+m[2]}).join(' '));
   st.appendChild(box);
   ctl.ask('Read it. Which picture?','Прочитай. Какая картинка?',[]);
-  const d=shuffle(L.filter(y=>y.e!==x.e)).slice(0,Math.min(nOpts(c)-1,L.length-1);
+  const d=shuffle(L.filter(y=>y.e!==x.e)).slice(0,Math.min(nOpts(c)-1,L.length-1));
   const o=y=>({k:y.t,right:y===x,cls:'scene',html:`<span class="pic">${y.e}</span>`});
   makeChoices(st,shuffle([o(x),...d.map(o)]));
   R.q.hint=()=>{const ws=[...box.querySelectorAll('.rd')];speakQ(ws.map(w=>({t:w.dataset.w,rate:.7,onstart:()=>{ws.forEach(z=>z.classList.remove('lit'));w.classList.add('lit')}})));later(()=>ws.forEach(z=>z.classList.remove('lit')),ws.length*900+800)};
