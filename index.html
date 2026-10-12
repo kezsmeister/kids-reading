@@ -405,7 +405,7 @@ const speak=(t,v,f)=>speakQ([t],v,f);
 function say(list){if(S.voice&&list&&list.length)speakQ(list)}
 const sndSay=g=>G[g][0];
 /* TTS reads single letters as NAMES, so a sound is spoken as "sss... sss... sun" */
-const soundSpeech=g=>[{t:sndSay(g),rate:.6},{t:sndSay(g),rate:.6},G[g][1]];
+const soundSpeech=g=>[{t:sndSay(g),rate:.6},{t:sndSay(g),rate:.6},G[g][1]]; /* TTS is not a reliable pure-phoneme model: adult modelling is required. */
 const sayWordSlow=gl=>gl.map(g=>({t:sndSay(g),rate:.55}));
 
 /* ======================= engine ======================= */
@@ -583,7 +583,7 @@ make(c,st,forceG){
   if(mode==='hear'){
     const pool=forceG?SETS.slice(0,3).flat():all;
     const d=shuffle(pool.filter(x=>!sameSound(x,g))).slice(0,n-1);
-    const row=el('div','qrow');row.appendChild(el('div','bigpic',G[g][2]));
+    const row=el('div','qrow');row.appendChild(el('div','bigpic','👂'));
     playBtn(row,()=>speakQ(soundSpeech(g)));st.appendChild(row);
     ctl.ask('Listen. Which letter makes this sound?','Послушай. Какая буква даёт этот звук?',soundSpeech(g));
     makeChoices(st,shuffle([gOpt(g,true),...d.map(x=>gOpt(x,false))]));
@@ -743,7 +743,7 @@ ACTS.meaning={name:'Understand',icon:'💭',color:['#31b2ad','#208580'],minU:2,
  R.q.graphemes=[...new Set(toks(x.t).flatMap(w=>decomp(w)||[]))];
  st.appendChild(el('div','sent',x.t.split(' ').map(w=>{const m=w.match(/^(.*?)([.,!?]*)$/);return rdWord(m[1])+m[2]}).join(' ')));
  ctl.ask('Read it. '+x.ask,'Прочитай. '+x.ru,[]);
- makeChoices(st,shuffle(x.options.map(([label,emoji,right])=>({k:label,right,cls:'scene',html:'<span class="pic">'+emoji+'</span><span class="lbl">'+label+'</span>'}))));
+ makeChoices(st,shuffle(x.options.map(([label,emoji,right])=>({k:label,right,cls:'scene',html:'<span class="pic">'+emoji+'</span>'}))));
  R.q.hint=()=>speakQ([x.t,x.ask]);ctl.note(x.t,[x.t]);
  }};
 const ORDER=['sounds','blend','build','read','tricky','sentence','meaning','look'];
