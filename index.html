@@ -283,7 +283,7 @@ const SENTRAW=[
  ['A cat sat.','🐱🪑'],['A man ran.','🏃‍♂️'],['A red hat.','🔴🎩'],['Ten men.','🔟👬'],['Dad is sad.','👨😢'],['A rat in a hat.','🐀🎩'],['The cat is in a tent.','🐱⛺'],
  ['A dog on a log.','🐶🪵'],['A bug in a cup.','🐛☕'],['The dog is on a bed.','🐶🛏️'],['The sun is hot.','☀️🔥'],['A frog on a rock.','🐸🪨'],['A cat and a dog.','🐱🐶'],['Mum hugs a doll.','👩🤗🪆'],['A bat in a bag.','🦇👜'],
  ['A goat in the rain.','🐐🌧️'],['A bee on a tree.','🐝🌳'],['A coat on a goat.','🧥🐐'],['A snail on a log.','🐌🪵'],['I see a boat.','👀⛵'],
- ['A king in a van.','🤴🚐'],['The moon is up.','🌙⬆️'],['A book on a bed.','📖🛏️'],['A web in the wind.','🕸️🌬️'],['We swim.','🏊🏊‍♀️'],
+ ['A king in a van.','🤴🚐'],['The moon is up.','🌙⬆️'],['A web in the wind.','🕸️🌬️'],['We swim.','🏊🏊‍♀️'],
  ['A fox in a box.','🦊📦'],['Six chicks.','6️⃣🐥'],['A fish on a dish.','🐟🍽️'],['A ship in the rain.','🚢🌧️'],['A sheep in a jeep.','🐑🚙'],
  ['A car in the rain.','🚗🌧️'],['A star and the moon.','⭐🌙'],['A queen in a car.','👸🚗'],['A shark and a fish.','🦈🐟'],['A cloud and the sun.','☁️☀️']];
 const toks=s=>s.split(' ').map(t=>t.replace(/[.,!?]/g,''));
@@ -454,7 +454,7 @@ ctl.correct=()=>{
   const q=R.q;if(q.done)return;q.done=true;const first=q.tries===0;
   if(first){R.ok++;if(!R.a.place)S.stars++}
   R.log.push({tag:q.tag,first});
-  if(!R.a.place){q.graphemes.forEach(g=>trackSound(g,first));recSkill(first)}
+  if(!R.a.place){if(R.id==='sounds'||R.id==='review')q.graphemes.forEach(g=>trackSound(g,first));recSkill(first)}
   R.marks[R.idx]=first?2:1;sfx.ok();burst();
   const pr=pick(PRAISE);
   $('#fbtext').innerHTML=`<span class="praise">${pr[0]}${S.ru?`<small>${pr[1]}</small>`:''}</span>${q.note?`<span class="note">${q.note}</span>`:''}`;
@@ -470,7 +470,7 @@ ctl.wrong=()=>{
     $('#fbtext').innerHTML=`<span class="oops">Let’s listen again 💛${S.ru?'<small>Давай послушаем ещё раз</small>':''}</span>`;
     if(q.hint)later(q.hint,150);else later(()=>say(['Let us listen again.',...q.stim]),150);
   }else{
-    q.done=true;R.marks[R.idx]=1;q.graphemes.forEach(g=>trackSound(g,false));sfx.oops();if(q.glow)q.glow();
+    q.done=true;R.marks[R.idx]=1;if(R.id==='sounds'||R.id==='review')q.graphemes.forEach(g=>trackSound(g,false));sfx.oops();if(q.glow)q.glow();
     $('#fbtext').innerHTML=`<span class="oops">Here it is!</span>${q.note?`<span class="note">${q.note}</span>`:''}`;
     say(['That is okay. Here it is.',...q.nsay]);finishQ();
   }
