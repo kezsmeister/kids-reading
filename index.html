@@ -264,7 +264,7 @@ const LEXRAW=`ant|a.n.t|🐜,pan|p.a.n|🍳,pin|p.i.n|📌,tin|t.i.n|🥫,sit|s.
 cat|c.a.t|🐱,hat|h.a.t|🎩,man|m.a.n|👨,men|m.e.n|👬,map|m.a.p|🗺️,rat|r.a.t|🐀,red|r.e.d|🔴,hen|h.e.n|🐔,pen|p.e.n|🖊️,net|n.e.t|🥅,ten|t.e.n|🔟,dad|d.a.d|👨‍👧,kid|k.i.d|🧒,cap|c.a.p|🧢,hand|h.a.n.d|✋,sad|s.a.d|😢,mad|m.a.d|😠,ram|r.a.m|🐏,tent|t.e.n.t|⛺,drip|d.r.i.p|💧,mask|m.a.s.k|🎭,
 dog|d.o.g|🐶,log|l.o.g|🪵,pig|p.i.g|🐷,bug|b.u.g|🐛,sun|s.u.n|☀️,bus|b.u.s|🚌,cup|c.u.p|☕,hug|h.u.g|🤗,bat|b.a.t|🦇,bed|b.e.d|🛏️,bell|b.e.ll|🔔,doll|d.o.ll|🪆,mop|m.o.p|🧹,pot|p.o.t|🍲,hot|h.o.t|🔥,nut|n.u.t|🥜,bag|b.a.g|👜,leg|l.e.g|🦵,lips|l.i.p.s|💋,lamp|l.a.m.p|💡,gift|g.i.f.t|🎁,flag|f.l.a.g|🚩,crab|c.r.a.b|🦀,drum|d.r.u.m|🥁,milk|m.i.l.k|🥛,frog|f.r.o.g|🐸,duck|d.u.ck|🦆,sock|s.o.ck|🧦,clock|c.l.o.ck|🕰️,rock|r.o.ck|🪨,mum|m.u.m|👩,golf|g.o.l.f|⛳,
 rain|r.ai.n|🌧️,snail|s.n.ai.l|🐌,nail|n.ai.l|💅,boat|b.oa.t|⛵,goat|g.oa.t|🐐,coat|c.oa.t|🧥,soap|s.oa.p|🧼,road|r.oa.d|🛣️,toast|t.oa.s.t|🍞,pie|p.ie|🥧,tie|t.ie|👔,bee|b.ee|🐝,tree|t.r.ee|🌳,feet|f.ee.t|🦶,jeep|j.ee.p|🚙,jet|j.e.t|✈️,jug|j.u.g|🏺,fork|f.or.k|🍴,corn|c.or.n|🌽,horn|h.or.n|📯,sleep|s.l.ee.p|🛌,green|g.r.ee.n|🟢,
-zip|z.i.p|🤐,web|w.e.b|🕸️,van|v.a.n|🚐,vet|v.e.t|🩺,wet|w.e.t|💦,ring|r.i.ng|💍,king|k.i.ng|🤴,moon|m.oo.n|🌙,book|b.oo.k|📖,wink|w.i.n.k|😉,spoon|s.p.oo.n|🥄,boot|b.oo.t|👢,vest|v.e.s.t|🦺,wind|w.i.n.d|🌬️,swim|s.w.i.m|🏊,
+zip|z.i.p|🤐,web|w.e.b|🕸️,van|v.a.n|🚐,vet|v.e.t|🩺,wet|w.e.t|💦,ring|r.i.ng|💍,king|k.i.ng|🤴,moon|m.oo.n|🌙,wink|w.i.n.k|😉,spoon|s.p.oo.n|🥄,boot|b.oo.t|👢,vest|v.e.s.t|🦺,wind|w.i.n.d|🌬️,swim|s.w.i.m|🏊,
 fox|f.o.x|🦊,box|b.o.x|📦,six|s.i.x|6️⃣,chick|ch.i.ck|🐥,chips|ch.i.p.s|🍟,ship|sh.i.p|🚢,fish|f.i.sh|🐟,shell|sh.e.ll|🐚,bath|b.a.th|🛁,yak|y.a.k|🐃,sheep|sh.ee.p|🐑,teeth|t.ee.th|🦷,three|th.r.ee|3️⃣,dish|d.i.sh|🍽️,shop|sh.o.p|🏪,chain|ch.ai.n|⛓️,
 queen|qu.ee.n|👸,cloud|c.l.ou.d|☁️,mouth|m.ou.th|👄,coin|c.oi.n|🪙,car|c.ar|🚗,star|s.t.ar|⭐,farm|f.ar.m|🚜,shark|sh.ar.k|🦈,jar|j.ar|🫙,oil|oi.l|🛢️,arm|ar.m|💪,cart|c.ar.t|🛒`;
 const gs=s=>s.split('.');
@@ -466,11 +466,11 @@ ctl.wrong=()=>{
   const q=R.q;if(q.done)return;q.tries++;
   if(R.a.place){q.done=true;R.marks[R.idx]=1;R.log.push({tag:q.tag,first:false});later(advance,700);return}
   if(q.tries===1){
-    q.graphemes.forEach(g=>trackSound(g,false));recSkill(false);sfx.oops();
+    recSkill(false);sfx.oops();
     $('#fbtext').innerHTML=`<span class="oops">Let’s listen again 💛${S.ru?'<small>Давай послушаем ещё раз</small>':''}</span>`;
     if(q.hint)later(q.hint,150);else later(()=>say(['Let us listen again.',...q.stim]),150);
   }else{
-    q.done=true;R.marks[R.idx]=1;sfx.oops();if(q.glow)q.glow();
+    q.done=true;R.marks[R.idx]=1;q.graphemes.forEach(g=>trackSound(g,false));sfx.oops();if(q.glow)q.glow();
     $('#fbtext').innerHTML=`<span class="oops">Here it is!</span>${q.note?`<span class="note">${q.note}</span>`:''}`;
     say(['That is okay. Here it is.',...q.nsay]);finishQ();
   }
@@ -724,7 +724,29 @@ function finishPlacement(){
 }
 
 /* ======================= screens ======================= */
-const ORDER=['sounds','blend','build','read','tricky','sentence','look'];
+ACTS.review={name:'Sound review',icon:'🔁',color:['#8464cf','#5d41a1'],
+ note:'Practice previously encountered sounds that are due for review.',
+ plan:()=>shuffle(unlockedG().filter(needsReview)),
+ make(c,st){const due=R.plan||[];ACTS.sounds.make(c,st,due[R.idx%due.length]||pick(unlockedG()))}
+};
+const COMPREHENSION=[
+ {set:2,t:'The cat is in a tent.',ask:'Where is the cat?',ru:'Где кот?',options:[['Tent','⛺',true],['Bed','🛏️',false],['Bag','👜',false]]},
+ {set:3,t:'A dog on a log.',ask:'What is on the log?',ru:'Кто на бревне?',options:[['Dog','🐶',true],['Cat','🐱',false],['Bug','🐛',false]]},
+ {set:3,t:'The sun is hot.',ask:'What is hot?',ru:'Что горячее?',options:[['Sun','☀️',true],['Moon','🌙',false],['Rain','🌧️',false]]},
+ {set:4,t:'A bee on a tree.',ask:'Where is the bee?',ru:'Где пчела?',options:[['Tree','🌳',true],['Boat','⛵',false],['Bed','🛏️',false]]},
+ {set:6,t:'A fox in a box.',ask:'Where is the fox?',ru:'Где лиса?',options:[['Box','📦',true],['Ship','🚢',false],['Bag','👜',false]]}
+];
+ACTS.meaning={name:'Understand',icon:'💭',color:['#31b2ad','#208580'],minU:2,
+ note:'Read a decodable sentence and answer a simple meaning question.',
+ make(c,st){
+ const x=chooseItem(COMPREHENSION.filter(x=>x.set<=S.U),y=>y.t);R.q.tag=x.set;
+ R.q.graphemes=[...new Set(toks(x.t).flatMap(w=>decomp(w)||[]))];
+ st.appendChild(el('div','sent',x.t.split(' ').map(w=>{const m=w.match(/^(.*?)([.,!?]*)$/);return rdWord(m[1])+m[2]}).join(' ')));
+ ctl.ask('Read it. '+x.ask,'Прочитай. '+x.ru,[]);
+ makeChoices(st,shuffle(x.options.map(([label,emoji,right])=>({k:label,right,cls:'scene',html:'<span class="pic">'+emoji+'</span><span class="lbl">'+label+'</span>'}))));
+ R.q.hint=()=>speakQ([x.t,x.ask]);ctl.note(x.t,[x.t]);
+ }};
+const ORDER=['sounds','blend','build','read','tricky','sentence','meaning','look'];
 function teachSound(g){
  const v=G[g];$('#resBody').innerHTML='<div class="bigtitle">🌱 Learn: '+g+'</div><div class="bigl">'+rd(g,[g])+'</div><div class="bigpic">'+v[2]+'</div><div class="bigtitle">'+v[1]+'</div><div style="max-width:480px">Listen, say the sound, and point to the letter. '+(S.ru?'Послушай, повтори и покажи букву.':'')+'<p><small>Adult: model the pure sound without an added vowel. Computer speech is only an approximation.</small></p></div><div class="row"><button class="bigbtn blue" id="teachListen">🔊 Listen</button><button class="bigbtn" id="teachNext">✓ Practice</button></div>';
  show('res');$('#teachListen').onclick=()=>speakQ(soundSpeech(g));$('#teachNext').onclick=()=>startRound('sounds');speakQ(soundSpeech(g));
@@ -733,7 +755,7 @@ function renderTeaching(){
  const current=SETS[S.U-1],due=unlockedG().filter(needsReview),root=$('#cards');
  const b=el('button','card place');b.style.setProperty('--c','#329b77');b.style.setProperty('--d','#227054');b.innerHTML='<div class="ic">🌱</div><div class="nm">Learn a sound</div><small>Listen · say · recognize</small>';
  b.onclick=()=>teachSound(current.find(g=>!soundMastered(g))||pick(current));root.prepend(b);
- if(due.length){const r=el('button','card place');r.style.setProperty('--c','#8464cf');r.style.setProperty('--d','#5d41a1');r.innerHTML='<div class="ic">🔁</div><div class="nm">Review due sounds</div><small>'+due.length+' sounds to revisit</small>';r.onclick=()=>startRound('sounds');root.prepend(r)}
+ if(due.length){const r=el('button','card place');r.style.setProperty('--c','#8464cf');r.style.setProperty('--d','#5d41a1');r.innerHTML='<div class="ic">🔁</div><div class="nm">Review due sounds</div><small>'+due.length+' sounds to revisit</small>';r.onclick=()=>startRound('review');root.prepend(r)}
 }
 function renderHome(){
   $('#starCount').textContent=S.stars;$('#stkCount').textContent=S.stickers.length;$('#stkTotal').textContent=STICKERS.length;
