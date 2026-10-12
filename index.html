@@ -309,10 +309,15 @@ const PAIRS=[
 /* ======================= state ======================= */
 const KEY='readinggarden.v1';
 const STICKERS=['🦄','🐶','🐱','🐰','🦋','🐞','🐢','🐙','🦁','🐼','🐸','🐥','🌈','🌻','🍓','🍦','🚀','🎈','🎨','👑','🐬','🦊','🐝','🍭'];
-const DEFAULTS=()=>({stars:0,stickers:[],skills:{},sound:true,voice:true,voiceName:'',ru:true,perRound:8,U:1,placed:false,newOk:0,newAtt:0});
+const DEFAULTS=()=>({stars:0,stickers:[],skills:{},sound:true,voice:true,voiceName:'',ru:true,perRound:8,U:1,placed:false,newOk:0,newAtt:0,phonemes:{},sessions:0});
 function load(){try{const r=localStorage.getItem(KEY);if(r)return Object.assign(DEFAULTS(),JSON.parse(r))}catch(e){}return DEFAULTS()}
 let S=load();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const DAY=86400000;
+function soundRecord(g){if(!S.phonemes)S.phonemes={};return S.phonemes[g]||(S.phonemes[g]={seen:0,ok:0,streak:0,due:0});}
+function trackSound(g,first){if(!GSET[g])return;const v=soundRecord(g);v.seen++;if(first){v.ok++;v.streak++;v.due=Date.now()+DAY*[1,2,4,7,14][Math.min(4,v.streak-1)]}else{v.streak=0;v.due=Date.now()+DAY}}
+function needsReview(g){const v=soundRecord(g);return v.seen>0&&v.due<=Date.now()}
+function soundMastered(g){const v=soundRecord(g);return v.seen>=3&&v.ok/v.seen>=.8&&v.streak>=2}
 function sk(key){return S.skills[key]||(S.skills[key]={lvl:1,streak:0,miss:0,att:0,ok:0,rounds:0})}
 const unlockedG=()=>{const o=[];for(let i=0;i<S.U;i++)o.push(...SETS[i]);return o};
 const okG=g=>(GSET[g]||99)<=S.U;
@@ -424,7 +429,7 @@ function nextQ(){
   if(R.idx>=R.total)return finishRound();
   const st=$('#stage');st.innerHTML='';st.className='';st.dataset.act=R.id;
   $('#prompt').innerHTML='';$('#ruline').textContent='';$('#fbtext').innerHTML='';$('#nextBtn').classList.remove('show');
-  R.q={tries:0,done:false,hint:null,glow:null,note:'',nsay:[],speech:[],stim:[],tag:0};
+  R.q={tries:0,done:false,hint:null,glow:null,note:'',nsay:[],speech:[],stim:[],tag:0,graphemes:[]};
   drawProgress();
   const c={lvl:sk(R.key).lvl,idx:R.idx};
   try{R.a.make(c,st);organize(st)}catch(e){console.error('question error',e);R.marks[R.idx]=1;R.idx++;setTimeout(()=>{if(R)nextQ()},50)}
@@ -449,7 +454,7 @@ ctl.correct=()=>{
   const q=R.q;if(q.done)return;q.done=true;const first=q.tries===0;
   if(first){R.ok++;if(!R.a.place)S.stars++}
   R.log.push({tag:q.tag,first});
-  if(!R.a.place)recSkill(first);
+  if(!R.a.place){q.graphemes.forEach(g=>trackSound(g,first));recSkill(first)}
   R.marks[R.idx]=first?2:1;sfx.ok();burst();
   const pr=pick(PRAISE);
   $('#fbtext').innerHTML=`<span class="praise">${pr[0]}${S.ru?`<small>${pr[1]}</small>`:''}</span>${q.note?`<span class="note">${q.note}</span>`:''}`;
@@ -461,7 +466,7 @@ ctl.wrong=()=>{
   const q=R.q;if(q.done)return;q.tries++;
   if(R.a.place){q.done=true;R.marks[R.idx]=1;R.log.push({tag:q.tag,first:false});later(advance,700);return}
   if(q.tries===1){
-    recSkill(false);sfx.oops();
+    q.graphemes.forEach(g=>trackSound(g,false));recSkill(false);sfx.oops();
     $('#fbtext').innerHTML=`<span class="oops">Let’s listen again 💛${S.ru?'<small>Давай послушаем ещё раз</small>':''}</span>`;
     if(q.hint)later(q.hint,150);else later(()=>say(['Let us listen again.',...q.stim]),150);
   }else{
@@ -475,12 +480,12 @@ function advance(){if(!R)return;R.idx++;nextQ()}
 /* adaptive levels per activity (3 first-try in a row: harder; 2 misses: easier) + sound-group progression */
 function recSkill(first){
   const s=sk(R.key);
-  if(first){s.att++;s.ok++;s.streak++;s.miss=0;if(s.streak>=3&&s.lvl<3){s.lvl++;s.streak=0;toast('Level up! 🚀');sfx.up()}}
+  if(first){s.att++;s.ok++;s.streak++;s.miss=0;if(s.streak>=6&&s.lvl<3){s.lvl++;s.streak=0;toast('Level up! 🚀');sfx.up()}}
   else{if(R.q.tries<=1)s.att++;s.miss++;s.streak=0;if(s.miss>=2&&s.lvl>1){s.lvl--;s.miss=0}}
   /* newest group unlocks the next: 10 first-try answers on items using the new sounds, at >=70% */
   if(R.q.tag===S.U&&S.U<SETS.length&&R.q.tries<=1){
     S.newAtt++;if(first)S.newOk++;
-    if(S.newOk>=10&&S.newOk/S.newAtt>=.7){S.U++;S.newOk=0;S.newAtt=0;const u=S.U;setTimeout(()=>{toast('New sounds! '+SETS[u-1].join(' '));sfx.up()},900)}
+    if(S.newAtt>=18&&S.newOk/S.newAtt>=.8&&SETS[S.U-1].every(soundMastered)){S.U++;S.newOk=0;S.newAtt=0;const u=S.U;setTimeout(()=>{toast('New sounds! '+SETS[u-1].join(' '));sfx.up()},900)}
   }
   save();
 }
@@ -496,7 +501,7 @@ function burst(){
 }
 function finishRound(){
   if(R.a.place)return finishPlacement();
-  const s=sk(R.key);s.rounds++;S.stars+=1;
+  const s=sk(R.key);s.rounds++;S.stars+=1;S.sessions=(S.sessions||0)+1;
   const left=STICKERS.filter(x=>!S.stickers.includes(x));let newSt=null;
   if(left.length){newSt=pick(left);S.stickers.push(newSt)}
   save();
@@ -541,7 +546,7 @@ const nOpts=c=>c.lvl===1?3:4;
 function chooseItem(list,key){
   const fresh=list.filter(x=>!R.used.includes(key(x)));const L=fresh.length?fresh:list;
   const nw=L.filter(x=>x.set===S.U);
-  const it=(nw.length&&Math.random()<.55)?pick(nw):pick(L);
+  const due=L.filter(x=>x.g&&((Array.isArray(x.g)?x.g:[x.g]).some(needsReview)));const it=due.length&&Math.random()<.4?pick(due):(nw.length&&Math.random()<.55)?pick(nw):pick(L);
   R.used.push(key(it));return it;
 }
 const lexNow=f=>LEX.filter(x=>x.set<=S.U&&(!f||f(x)));
@@ -573,7 +578,7 @@ make(c,st,forceG){
   const inits=all.filter(g=>G[g][3]);
   const mode=forceG?'hear':((inits.length>=3&&Math.random()<.45)?'see':'hear');
   const g=forceG||chooseItem((mode==='see'?inits:all).map(g=>({g,set:GSET[g]})),x=>x.g).g;
-  R.q.tag=GSET[g];
+  R.q.tag=GSET[g];R.q.graphemes=[g];
   const n=forceG?4:nOpts(c);
   if(mode==='hear'){
     const pool=forceG?SETS.slice(0,3).flat():all;
@@ -599,7 +604,7 @@ ACTS.blend={name:'Blend',icon:'🧩',color:['#5cc6ff','#2f97cc'],note:'Letters o
 make(c,st){
   let L=lexNow(x=>c.lvl===1?x.g.length===3&&x.g.every(g=>g.length===1):c.lvl===2?x.g.length<=4:true);
   if(L.length<3)L=lexNow();
-  const x=chooseItem(L,y=>y.w);R.q.tag=x.set;
+  const x=chooseItem(L,y=>y.w);R.q.tag=x.set;R.q.graphemes=x.g||[];
   const row=el('div','qrow');const t=tilesEl(x.g);row.appendChild(t);
   playBtn(row,()=>soundOut(t,x.g,x.w));st.appendChild(row);
   ctl.ask('Listen and blend. Which picture is it?','Слушай звуки и соединяй. Какая это картинка?',[]);
@@ -614,7 +619,7 @@ make(c,st){
 ACTS.build={name:'Build a word',icon:'🔤',color:['#ffb340','#cc8412'],note:'Picture + spoken word; one sound is missing (level 1: first, 2: last, 3: middle short vowel). Segmenting.',
 make(c,st){
   const VOW=['a','e','i','o','u'];
-  const L=lexNow(x=>x.g.length>=3&&(c.lvl<3||VOW.includes(x.g[1])));
+  const L=lexNow(x=>x.g.length>=3&&(c.lvl<3||VOW.includes(x.g[1]))&&(c.lvl!==1||x.g.length===3));
   const x=chooseItem(L,y=>y.w);R.q.tag=x.set;
   const at=c.lvl===1?0:c.lvl===2?x.g.length-1:1;
   const ans=x.g[at];
@@ -633,7 +638,7 @@ make(c,st){
 /* 4) Read a word */
 ACTS.read={name:'Read a word',icon:'📖',color:['#4fd08a','#2f9d63'],note:'A decodable word is shown but NOT spoken - she reads it and picks the picture. After a miss it is sounded out.',
 make(c,st){
-  const x=chooseItem(lexNow(),y=>y.w);R.q.tag=x.set;
+  const x=chooseItem(lexNow(y=>c.lvl===1?y.g.length===3:c.lvl===2?y.g.length<=4:true),y=>y.w);R.q.tag=x.set;
   st.appendChild(el('div','bigword',rd(x.w,x.g)));
   ctl.ask('Read the word. Which picture?','Прочитай слово. Какая картинка?',[]);
   const d=picDistractors(x,nOpts(c)-1,c.lvl+1);
@@ -645,11 +650,11 @@ make(c,st){
 ACTS.tricky={name:'Tricky words',icon:'🦉',color:['#a98bff','#7a5fd6'],note:'Tricky (not decodable) words learnt by sight, a few per sound group: the I to · no go into · he she we me be · was my you · they are all.',
 make(c,st){
   const all=trickyNow().map(w=>({w,set:TSET[w.toLowerCase()]}));
-  const x=chooseItem(all,y=>y.w);R.q.tag=x.set;
+  const x=chooseItem(all,y=>y.w);R.q.tag=x.set;R.q.graphemes=[];
   const row=el('div','qrow');row.appendChild(el('div','bigpic','🦉'));
   playBtn(row,()=>speakQ([x.w,{t:x.w,rate:.6}]));st.appendChild(row);
   ctl.ask('Tricky word! Find the word you hear.','Хитрое слово! Найди слово, которое слышишь.',[x.w,{t:x.w,rate:.6}]);
-  const d=shuffle(all.filter(y=>y.w!==x.w)).slice(0,Math.min(nOpts(c),all.length)-1);
+  const d=shuffle(all.filter(y=>y.w!==x.w)).slice(0,Math.min(nOpts(c)-1,all.length-1));
   const o=y=>({k:y.w,right:y.w===x.w,cls:'wd',html:rd(y.w,null,'tricky')});
   makeChoices(st,shuffle([o(x),...d.map(o)]));
   ctl.note(rd(x.w,null,'tricky'),[x.w]);
@@ -658,11 +663,11 @@ make(c,st){
 ACTS.sentence={name:'Read a sentence',icon:'📝',color:['#ff9f43','#cc7a26'],note:'Tiny sentences built only from unlocked sounds + unlocked tricky words. Pick the matching picture. After a miss it is read aloud word by word.',
 make(c,st){
   const L=SENTS.filter(s=>s.set<=S.U);
-  const x=chooseItem(L,y=>y.t);R.q.tag=x.set;
+  const x=chooseItem(L,y=>y.t);R.q.tag=x.set;R.q.graphemes=[...new Set(toks(x.t).flatMap(w=>decomp(w)||[]))];
   const box=el('div','sent',x.t.split(' ').map(w=>{const m=w.match(/^(.*?)([.,!?]*)$/);return rdWord(m[1])+m[2]}).join(' '));
   st.appendChild(box);
   ctl.ask('Read it. Which picture?','Прочитай. Какая картинка?',[]);
-  const d=shuffle(L.filter(y=>y.e!==x.e)).slice(0,Math.min(nOpts(c),L.length)-1);
+  const d=shuffle(L.filter(y=>y.e!==x.e)).slice(0,Math.min(nOpts(c)-1,L.length-1);
   const o=y=>({k:y.t,right:y===x,cls:'scene',html:`<span class="pic">${y.e}</span>`});
   makeChoices(st,shuffle([o(x),...d.map(o)]));
   R.q.hint=()=>{const ws=[...box.querySelectorAll('.rd')];speakQ(ws.map(w=>({t:w.dataset.w,rate:.7,onstart:()=>{ws.forEach(z=>z.classList.remove('lit'));w.classList.add('lit')}})));later(()=>ws.forEach(z=>z.classList.remove('lit')),ws.length*900+800)};
@@ -674,7 +679,7 @@ make(c,st){
   const looks=LOOK.filter(l=>okG(l.g)).map(l=>({l,set:GSET[l.g],key:'L'+l.L}));
   const pairs=PAIRS.filter(p=>p.set<=S.U).map(p=>({p,set:p.set,key:'P'+p.a+p.b}));
   const useLook=looks.length&&(!pairs.length||Math.random()<.4);
-  const it=chooseItem(useLook?looks:pairs,y=>y.key);R.q.tag=it.set;
+  const it=chooseItem(useLook?looks:pairs,y=>y.key);R.q.tag=it.set;R.q.graphemes=useLook?[it.l.g]:[];
   if(useLook){
     const l=it.l;
     const row=el('div','qrow');row.appendChild(el('div','bigl',rd(l.L,[l.g])));
@@ -710,7 +715,7 @@ ACTS.place={name:'Quick check',place:true,total:6,
 function finishPlacement(){
   let U=1;
   for(let s=1;s<=3;s++){const it=R.log.filter(x=>x.tag===s);if(it.length===2&&it.every(x=>x.first))U=s+1;else break}
-  S.U=Math.max(S.U,Math.min(U,4));S.placed=true;S.newOk=0;S.newAtt=0;save();
+  S.U=Math.max(S.U,Math.min(U,3));S.placed=true;S.newOk=0;S.newAtt=0;save();
   R.token++;R=null;
   $('#resBody').innerHTML=`<div class="bigtitle">🧭 All done!</div><div class="mysounds" style="font-size:clamp(26px,6vmin,44px)">${unlockedG().map(g=>`<i>${g}</i>`).join('')}</div><div class="bigtitle" style="font-size:clamp(20px,4.6vmin,34px)">Your sounds!${S.ru?'<br><small style="color:#8a7aa8">Твои звуки!</small>':''}</div><div class="row"><button class="bigbtn" id="resHome" aria-label="Home">🏠</button></div>`;
   show('res');sfx.win();burst();
@@ -720,6 +725,16 @@ function finishPlacement(){
 
 /* ======================= screens ======================= */
 const ORDER=['sounds','blend','build','read','tricky','sentence','look'];
+function teachSound(g){
+ const v=G[g];$('#resBody').innerHTML='<div class="bigtitle">🌱 Learn: '+g+'</div><div class="bigl">'+rd(g,[g])+'</div><div class="bigpic">'+v[2]+'</div><div class="bigtitle">'+v[1]+'</div><div style="max-width:480px">Listen, say the sound, and point to the letter. '+(S.ru?'Послушай, повтори и покажи букву.':'')+'<p><small>Adult: model the pure sound without an added vowel. Computer speech is only an approximation.</small></p></div><div class="row"><button class="bigbtn blue" id="teachListen">🔊 Listen</button><button class="bigbtn" id="teachNext">✓ Practice</button></div>';
+ show('res');$('#teachListen').onclick=()=>speakQ(soundSpeech(g));$('#teachNext').onclick=()=>startRound('sounds');speakQ(soundSpeech(g));
+}
+function renderTeaching(){
+ const current=SETS[S.U-1],due=unlockedG().filter(needsReview),root=$('#cards');
+ const b=el('button','card place');b.style.setProperty('--c','#329b77');b.style.setProperty('--d','#227054');b.innerHTML='<div class="ic">🌱</div><div class="nm">Learn a sound</div><small>Listen · say · recognize</small>';
+ b.onclick=()=>teachSound(current.find(g=>!soundMastered(g))||pick(current));root.prepend(b);
+ if(due.length){const r=el('button','card place');r.style.setProperty('--c','#8464cf');r.style.setProperty('--d','#5d41a1');r.innerHTML='<div class="ic">🔁</div><div class="nm">Review due sounds</div><small>'+due.length+' sounds to revisit</small>';r.onclick=()=>startRound('sounds');root.prepend(r)}
+}
 function renderHome(){
   $('#starCount').textContent=S.stars;$('#stkCount').textContent=S.stickers.length;$('#stkTotal').textContent=STICKERS.length;
   $('#tSound').classList.toggle('off',!S.sound);$('#tSound').textContent=S.sound?'🔔':'🔕';
@@ -729,6 +744,7 @@ function renderHome(){
   if(!S.placed){const b=el('button','card place');b.type='button';b.style.setProperty('--c','#7a5cff');b.style.setProperty('--d','#4a2fc4');b.dataset.act='place';
     b.innerHTML=`<div class="ic">🧭</div><div class="nm">Start here!${S.ru?'<br><small style="font-size:.6em">Начни здесь!</small>':''}</div>`;
     b.addEventListener('click',()=>{ac();unlockSpeech();startRound('place')});box.appendChild(b)}
+  renderTeaching();
   ORDER.forEach(id=>{
     const a=ACTS[id];const s=sk(id);const locked=a.minU&&S.U<a.minU;
     const b=el('button','card'+(locked?' locked':''));b.type='button';b.dataset.act=id;b.style.setProperty('--c',a.color[0]);b.style.setProperty('--d',a.color[1]);
@@ -759,9 +775,9 @@ function renderParent(){
     return `<tr><td><b>${a.name}</b><div class="small-note">${a.note}</div></td><td>${lvDots(s.lvl)}</td><td>${s.rounds}</td><td>${s.att?pct+'%':'–'}<div class="bar2"><i style="width:${pct}%"></i></div></td></tr>`}).join('');
   const setBtns=SETS.map((s,i)=>`<button class="modebtn${S.U===i+1?' on':''}" data-u="${i+1}">${i+1}: ${s.join(' ')}</button>`).join('');
   $('#parBody').innerHTML=`
-   <p class="small-note">Systematic synthetic phonics in Jolly Phonics order, letter SOUNDS (not names). Every word and sentence uses only unlocked sounds (+ unlocked tricky words). The newest sound group unlocks the next after 10 first-try answers on items with the new sounds (≥70%). Progress is saved on this device only.</p>
-   <div class="pset"><b>Sound groups unlocked: ${S.U}/${SETS.length}</b>${S.U<SETS.length?` · next group: ${S.newOk}/10 ✓`:''}</div>
-   <div class="pset">${setBtns}</div>
+   <p class="small-note">Systematic synthetic phonics in Jolly Phonics order, letter SOUNDS (not names). Every word and sentence uses only unlocked sounds (+ unlocked tricky words). Next group requires at least 18 attempts, 80% first-try accuracy, and mastery evidence for every sound in the current group. Progress is saved on this device only.</p>
+   <div class="pset"><b>Sound groups unlocked: ${S.U}/${SETS.length}</b>${S.U<SETS.length?` · next group: ${S.newOk}/${S.newAtt} ✓ (80% over 18+ attempts)`:''}</div>
+   <div class="pset">${setBtns}</div><div class="small-note">Sound mastery: ${unlockedG().map(g=>g+' '+(soundMastered(g)?'✓':soundRecord(g).ok+'/'+soundRecord(g).seen)).join(' · ')}</div>
    <div class="small-note">Tap a group to unlock up to it (or lock back). Tricky words now: ${trickyNow().join(', ')}</div>
    <div class="pset"><button class="modebtn" id="rePlace">🧭 Redo quick check</button></div>
    <table class="ptable"><tr><th>Activity</th><th>Level</th><th>Rounds</th><th>First-try</th></tr>${rows}</table>
